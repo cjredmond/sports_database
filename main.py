@@ -22,6 +22,35 @@ Felipe      Godin       Savic       Juanfran
                 Oblak
 """)
 
+def user_chooses_sort():
+    print("You can search player rating and age from the top or bottom")
+    field = input("(R)ating or (A)ge?  : ").upper()
+    up_down = input("(T)op or (B)ottom?  : ").upper()
+    amount = input("How many should show? (#)  ").upper()
+    return_field = ""
+    return_up_down = ""
+    if field == "R":
+        return_field = "rating"
+    elif field == "A":
+        return_field = "age"
+    else:
+        pass
+    if up_down == "T":
+        return_up_down = "DESC"
+    else:
+        pass
+    return return_field,return_up_down,amount
+
+def top_sort(three_things):
+    sql = "SELECT * FROM player_data ORDER BY {} {} limit {};".format(three_things[0],three_things[1],three_things[2])
+    cursor.execute(sql)
+    results = cursor.fetchall()
+    for row in results:
+        print("""Player name: {}, Position: {}, Nationality: {}, Player rating: {}, Player age: {}.
+""".format(row[1].title(),row[2].upper(),row[3].title(),row[4],row[5]))
+
+
+
 
 def search(field):
     choice = input("What is the {} you want to search for?".format(field)).lower()
@@ -56,7 +85,6 @@ def new_player_data():
     return new_id,new_name,new_position,new_country,new_rating,new_age
 
 def add_player(info):
-    print("HERE")
     cursor.execute("INSERT INTO player_data VALUES(%s,%s,%s,%s,%s,%s)",(info[0],info[1],info[2],info[3],info[4],info[5]) )
     connection.commit()
 
@@ -80,23 +108,28 @@ def user_chooses_search():
         print("Please enter valid character")
         user_chooses_search()
 
-def add_or_search():
-    choice = input("Do you want to (A)dd a player or (S)earch?").upper()
+def add_or_search_or_top():
+    choice = input("Do you want to (A)dd a player, (S)earch, or show a (T)op list?").upper()
     if choice == "A":
         return "A"
     elif choice == "S":
         return "S"
+    elif choice == "T":
+        return "T"
     else:
         print("Enter a valid answer")
-        add_or_search()
+        add_or_search_or_top()
 
 def main_function():
-    user_choice = add_or_search()
+    user_choice = add_or_search_or_top()
     if user_choice == "A":
         add_player(new_player_data())
         main_function()
     elif user_choice == "S":
         user_chooses_search()
+        main_function()
+    elif user_choice == "T":
+        top_sort(user_chooses_sort())
         main_function()
     else:
         main_function()
@@ -108,7 +141,10 @@ def program_running():
     team()
     main_function()
 
-
+def update():
+    sql = "UPDATE atletico_players SET rating 99 WHERE name = 'saul';"
+    cursor.execute(sql)
+    results = cursor.fetchall()
 
 
 program_running()
