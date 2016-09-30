@@ -17,8 +17,6 @@ CREATE TABLE player_data (
 );
 
 """
-# cursor.execute(create_table_command)
-# cursor.execute("INSERT INTO player_data VALUES(1, 'connor', 'ST', 'united states', 0, 24)")
 cursor.execute(create_table_command)
 with open('atletico_players.csv') as csvfile:
     read = csv.reader(csvfile, delimiter=',')
