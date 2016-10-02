@@ -11,6 +11,7 @@ CREATE TABLE player_data (
 );
 
 """
+
 connection = psycopg2.connect("dbname=atletico_fifa")
 cursor = connection.cursor()
 
@@ -21,6 +22,11 @@ Carrasco    Saul        Gabi(c)       Koke
 Felipe      Godin       Savic       Juanfran
                 Oblak
 """)
+
+def print_all_columns(results):
+    for row in results:
+        print("""Player name: {}, Position: {}, Nationality: {}, Player rating: {}, Player age: {}.
+""".format(row[1].title(),row[2].upper(),row[3].title(),row[4],row[5]))
 
 def user_chooses_sort():
     print("You can search player rating and age from the top or bottom")
@@ -42,46 +48,51 @@ def user_chooses_sort():
     return return_field,return_up_down,amount
 
 def top_sort(three_things):
-    sql = "SELECT * FROM player_data ORDER BY {} {} limit {};".format(three_things[0],three_things[1],three_things[2])
+    sql = "SELECT * FROM player_data ORDER BY %s %s limit %s;"
+    cursor.execute(sql % (three_things[0],three_things[1],three_things[2]))
+    results = cursor.fetchall()
+    print_all_columns(results)
+
+def show_all():
+    sql = "SELECT * FROM player_data ORDER BY name ASC"
     cursor.execute(sql)
     results = cursor.fetchall()
-    for row in results:
-        print("""Player name: {}, Position: {}, Nationality: {}, Player rating: {}, Player age: {}.
-""".format(row[1].title(),row[2].upper(),row[3].title(),row[4],row[5]))
-
-
-
+    print_all_columns(results)
 
 def search(field):
     choice = input("What is the {} you want to search for?".format(field)).lower()
-    sql = "SELECT * FROM player_data WHERE {} = %s;".format(field)
-    cursor.execute(sql,(choice,))
+    #sql = "SELECT * FROM player_data WHERE {} = %s;".format(field)
+    sql = "SELECT * FROM player_data WHERE %s = '%s';"
+    cursor.execute(sql % (field,choice))
     results = cursor.fetchall()
-    for row in results:
-        print("""Player name: {}, Position: {}, Nationality: {}, Player rating: {}, Player age: {}.
-""".format(row[1].title(),row[2].upper(),row[3].title(),row[4],row[5]))
-
+    print_all_columns(results)
 
 def numerical_search(field,boolean):
     choice = input("What is the {} you want to search for?".format(field)).lower()
-    sql = "SELECT * FROM player_data WHERE {} {} %s;".format(field,boolean)
-    cursor.execute(sql,(choice,))
+    sql = "SELECT * FROM player_data WHERE %s %s %s;"
+    cursor.execute(sql % (field, boolean, choice))
     results = cursor.fetchall()
-    for row in results:
-        print("""Player name: {}, Position: {}, Nationality: {}, Player rating: {}, Player age: {}.
-""".format(row[1].title(),row[2].upper(),row[3].title(),row[4],row[5]))
+    print_all_columns(results)
 
 count = 22
 def new_player_data():
     new_name = input("What is the new player name?  >")
-    new_position = input("What is the new player position?  >")
+    new_position = input("What is the new player position?\nChoose from: GK,CB,WB,CM,WF,ST  >")
     new_country = input("What is the new player nationality?  >")
-    new_rating = input("What is the new player's rating?  >")
-    new_age = input("What is the new player's age?  >")
+    new_rating = input("What is the new player's rating (must be a # 0-99)?  >")
+    if new_rating.isalpha() == True:
+        print("Thats not a number")
+        new_player_data()
+    elif int(new_rating) not in range(99):
+        print("Between 0-99")
+        new_player_data()
+    new_age = input("What is the new player's age (must be a # 0-99)?  >")
+    while int(new_age) > 99:
+        new_age = input("What is the new player's age (must be a # 0-99)?  >")
+
     global count
     new_id = count
     count = count +1
-
     return new_id,new_name,new_position,new_country,new_rating,new_age
 
 def add_player(info):
@@ -89,10 +100,11 @@ def add_player(info):
     connection.commit()
 
 def user_chooses_search():
-    choice = input("Search by player (N)ame, (P)osition, (C)ountry, (R)ating, or (A)ge?  >").upper()
+    choice = input("Search by player (N)ame, (P)osition, (C)ountry, (R)ating, or (A)ge?\n>").upper()
     if choice == "N":
         search("name")
     elif choice == "P":
+        print("The positions are: GK,CB,WB,CM,WF,ST")
         search("position")
     elif choice == "C":
         search("country")
@@ -109,20 +121,19 @@ def user_chooses_search():
         user_chooses_search()
 
 def add_or_search_or_top():
-    choice = input("Do you want to (A)dd a player, (S)earch, or show a (T)op list?").upper()
-    if choice == "A":
-        return "A"
-    elif choice == "S":
-        return "S"
-    elif choice == "T":
-        return "T"
+    choice = input("Do you want to (A)dd a player, (S)earch, show a (T)op list, (U)pdate a player, or (D)isplay all players?\n>").upper()
+    if choice in ["A", "S", "T", "U", "D"]:
+        return choice
     else:
         print("Enter a valid answer")
         add_or_search_or_top()
 
 def main_function():
     user_choice = add_or_search_or_top()
-    if user_choice == "A":
+    if user_choice == "D":
+        show_all()
+        main_function()
+    elif user_choice == "A":
         add_player(new_player_data())
         main_function()
     elif user_choice == "S":
@@ -130,6 +141,9 @@ def main_function():
         main_function()
     elif user_choice == "T":
         top_sort(user_chooses_sort())
+        main_function()
+    elif user_choice == "U":
+        update(update_choice())
         main_function()
     else:
         main_function()
@@ -141,14 +155,27 @@ def program_running():
     team()
     main_function()
 
-def update():
-    sql = "UPDATE atletico_players SET rating 99 WHERE name = 'saul';"
-    cursor.execute(sql)
-    results = cursor.fetchall()
+def update_choice():
+    player = input("Who do you want to edit?\n>")
+    field = input("What category do you want to edit? (P)osition, (R)ating, (A)ge, (N)ationality.\n>").upper()
+    if field == "P":
+        return_field = "position"
+    elif field == "R":
+        return_field = "rating"
+    elif field == "A":
+        return_field = "Age"
+    elif field == "N":
+        return_field = "country"
+    return player,return_field
+
+def update(info):
+    sql = "UPDATE player_data SET %s = '%s' WHERE name = '%s';"
+    stat = input("What is the new value for {} {}?\n:".format(info[0].title(),info[1].title()))
+    cursor.execute(sql % (info[1],stat,info[0]))
+    connection.commit()
 
 
 program_running()
-
 
 cursor.close()
 connection.close()
