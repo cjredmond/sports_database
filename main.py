@@ -23,6 +23,12 @@ Felipe      Godin       Savic       Juanfran
                 Oblak
 """)
 
+def show_all():
+    sql = "SELECT * FROM player_data ORDER BY name ASC"
+    cursor.execute(sql)
+    results = cursor.fetchall()
+    print_all_columns(results)
+
 def print_all_columns(results):
     for row in results:
         print("""Player name: {}, Position: {}, Nationality: {}, Player rating: {}, Player age: {}.
@@ -53,12 +59,6 @@ def top_sort(three_things):
     results = cursor.fetchall()
     print_all_columns(results)
 
-def show_all():
-    sql = "SELECT * FROM player_data ORDER BY name ASC"
-    cursor.execute(sql)
-    results = cursor.fetchall()
-    print_all_columns(results)
-
 def search(field):
     choice = input("What is the {} you want to search for?".format(field)).lower()
     #sql = "SELECT * FROM player_data WHERE {} = %s;".format(field)
@@ -76,9 +76,9 @@ def numerical_search(field,boolean):
 
 count = 22
 def new_player_data():
-    new_name = input("What is the new player name?  >")
-    new_position = input("What is the new player position?\nChoose from: GK,CB,WB,CM,WF,ST  >")
-    new_country = input("What is the new player nationality?  >")
+    new_name = input("What is the new player name?  >").lower()
+    new_position = input("What is the new player position?\nChoose from: GK,CB,WB,CM,WF,ST  >").lower()
+    new_country = input("What is the new player nationality?  >").lower()
     new_rating = input("What is the new player's rating (must be a # 0-99)?  >")
     if new_rating.isalpha() == True:
         print("Thats not a number")
@@ -148,13 +148,6 @@ def main_function():
     else:
         main_function()
 
-
-def program_running():
-    print("Welcome to the Atletico Madrid player database")
-    print("The player's name, position, nationality, FIFA rating, and age can be searched")
-    team()
-    main_function()
-
 def update_choice():
     player = input("Who do you want to edit?\n>")
     field = input("What category do you want to edit? (P)osition, (R)ating, (A)ge, (N)ationality.\n>").upper()
@@ -171,8 +164,14 @@ def update_choice():
 def update(info):
     sql = "UPDATE player_data SET %s = '%s' WHERE name = '%s';"
     stat = input("What is the new value for {} {}?\n:".format(info[0].title(),info[1].title()))
-    cursor.execute(sql % (info[1],stat,info[0]))
+    cursor.execute(sql , (info[1],stat,info[0]))
     connection.commit()
+
+def program_running():
+    print("Welcome to the Atletico Madrid player database")
+    print("The player's name, position, nationality, FIFA rating, and age can be searched")
+    team()
+    main_function()
 
 
 program_running()
